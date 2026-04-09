@@ -129,7 +129,7 @@ function AppInner() {
   // Global hotkeys
   useHotkeys(
     [
-      { hotkey: 'Mod+Enter', callback: handleSend, options: { enabled: !!current.url && !isLoading } },
+      { hotkey: 'Mod+Enter', callback: handleSend },
       { hotkey: 'Mod+S', callback: handleSave },
       { hotkey: 'Mod+N', callback: () => handleNewRequest() },
     ],

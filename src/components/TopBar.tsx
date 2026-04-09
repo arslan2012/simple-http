@@ -26,7 +26,9 @@ interface TopBarProps {
 function buildDisplayUrl(url: string, params: KeyValue[]): string {
   const enabled = params.filter((p) => p.enabled && p.key);
   if (enabled.length === 0) return url;
-  const qs = enabled.map((p) => `${p.key}=${p.value}`).join('&');
+  const qs = enabled
+    .map((p) => `${encodeURIComponent(p.key)}=${encodeURIComponent(p.value)}`)
+    .join('&');
   const sep = url.includes('?') ? '&' : '?';
   return `${url}${sep}${qs}`;
 }
@@ -50,8 +52,18 @@ function parseDisplayUrl(
     .filter(Boolean)
     .map((part) => {
       const eqIdx = part.indexOf('=');
-      if (eqIdx === -1) return { key: part, value: '', enabled: true };
-      return { key: part.slice(0, eqIdx), value: part.slice(eqIdx + 1), enabled: true };
+      try {
+        if (eqIdx === -1) return { key: decodeURIComponent(part), value: '', enabled: true };
+        return {
+          key: decodeURIComponent(part.slice(0, eqIdx)),
+          value: decodeURIComponent(part.slice(eqIdx + 1)),
+          enabled: true,
+        };
+      } catch {
+        // Fall back to raw string if decoding fails (malformed percent-encoding)
+        if (eqIdx === -1) return { key: part, value: '', enabled: true };
+        return { key: part.slice(0, eqIdx), value: part.slice(eqIdx + 1), enabled: true };
+      }
     });
   const disabledParams = existingParams.filter((p) => !p.enabled);
   return { url, params: [...parsedParams, ...disabledParams] };
@@ -106,7 +118,7 @@ export function TopBar({ request, onChange, onSend, onSave, isLoading, isSaved }
           style={{ color: METHOD_COLORS[request.method] }}
         >
           {HTTP_METHODS.map((m) => (
-            <option key={m} value={m} style={{ color: METHOD_COLORS[m], background: '#181825' }}>
+            <option key={m} value={m} style={{ color: METHOD_COLORS[m], background: 'var(--color-bg-alt)' }}>
               {m}
             </option>
           ))}
