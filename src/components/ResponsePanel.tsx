@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { HttpResponse } from '../types';
+import { CodeEditor, JsonViewer } from './CodeEditor';
 
 interface ResponsePanelProps {
   response: HttpResponse | null;
@@ -22,29 +23,30 @@ function formatSize(bytes: number) {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
-function prettyBody(body: string, headers: Record<string, string>) {
+function isJsonContentType(headers: Record<string, string>) {
   const ct = headers['content-type'] ?? '';
-  if (ct.includes('json')) {
-    try {
-      return JSON.stringify(JSON.parse(body), null, 2);
-    } catch {
-      return body;
-    }
-  }
-  return body;
+  return ct.includes('json');
 }
+
+const PanelShell = ({ children }: { children: React.ReactNode }) => (
+  <div className="flex-1 flex flex-col overflow-hidden min-w-0">{children}</div>
+);
+
+const PanelHeader = ({ label }: { label: string }) => (
+  <div className="px-3 py-2 border-b border-border flex items-center gap-2 flex-shrink-0 min-h-[38px]">
+    <span className="text-[11px] font-semibold tracking-widest uppercase text-text-muted">
+      {label}
+    </span>
+  </div>
+);
 
 export function ResponsePanel({ response, error, isLoading }: ResponsePanelProps) {
   const [tab, setTab] = useState<Tab>('body');
 
   if (isLoading) {
     return (
-      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-        <div className="px-3 py-2 border-b border-border flex items-center gap-2 flex-shrink-0 min-h-[38px]">
-          <span className="text-[11px] font-semibold tracking-widest uppercase text-text-muted">
-            Response
-          </span>
-        </div>
+      <PanelShell>
+        <PanelHeader label="Response" />
         <div className="flex-1 flex flex-col items-center justify-center gap-2.5 text-text-muted text-[13px] p-8">
           <div
             className="w-7 h-7 border-[3px] border-bg-hover border-t-accent rounded-full"
@@ -52,45 +54,37 @@ export function ResponsePanel({ response, error, isLoading }: ResponsePanelProps
           />
           <p>Sending request…</p>
         </div>
-      </div>
+      </PanelShell>
     );
   }
 
   if (error) {
     return (
-      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-        <div className="px-3 py-2 border-b border-border flex items-center gap-2 flex-shrink-0 min-h-[38px]">
-          <span className="text-[11px] font-semibold tracking-widest uppercase text-text-muted">
-            Response
-          </span>
-        </div>
+      <PanelShell>
+        <PanelHeader label="Response" />
         <div className="flex-1 flex flex-col items-center justify-center gap-2.5 text-red p-8">
           <div className="text-3xl">⚠</div>
           <p className="font-semibold text-sm">Request failed</p>
           <p className="text-xs font-mono text-center max-w-sm text-text-muted break-all">{error}</p>
         </div>
-      </div>
+      </PanelShell>
     );
   }
 
   if (!response) {
     return (
-      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-        <div className="px-3 py-2 border-b border-border flex items-center gap-2 flex-shrink-0 min-h-[38px]">
-          <span className="text-[11px] font-semibold tracking-widest uppercase text-text-muted">
-            Response
-          </span>
-        </div>
+      <PanelShell>
+        <PanelHeader label="Response" />
         <div className="flex-1 flex flex-col items-center justify-center gap-2.5 text-text-muted text-[13px] p-8">
           <div className="text-4xl">🚀</div>
           <p>Enter a URL and hit Send</p>
         </div>
-      </div>
+      </PanelShell>
     );
   }
 
   const headerEntries = Object.entries(response.headers);
-  const body = prettyBody(response.body, response.headers);
+  const showJsonViewer = isJsonContentType(response.headers);
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden min-w-0">
@@ -127,11 +121,18 @@ export function ResponsePanel({ response, error, isLoading }: ResponsePanelProps
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto p-3">
+      <div className="flex-1 overflow-auto p-3 flex flex-col min-h-0">
         {tab === 'body' && (
-          <pre className="font-mono text-xs leading-[1.7] whitespace-pre-wrap break-all text-text">
-            {body || <span className="text-text-faint italic">(empty body)</span>}
-          </pre>
+          showJsonViewer ? (
+            <JsonViewer value={response.body} />
+          ) : (
+            <CodeEditor
+              value={response.body}
+              language="text"
+              readOnly
+              minHeight="100px"
+            />
+          )
         )}
         {tab === 'headers' && (
           <div className="flex flex-col gap-1">

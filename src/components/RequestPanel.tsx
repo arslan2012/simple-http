@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { HttpRequest, BodyType } from '../types';
 import { KeyValueEditor } from './KeyValueEditor';
+import { CodeEditor } from './CodeEditor';
 
 interface RequestPanelProps {
   request: HttpRequest;
@@ -63,7 +64,7 @@ export function RequestPanel({ request, onChange }: RequestPanelProps) {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto p-3">
+      <div className="flex-1 overflow-auto p-3 flex flex-col min-h-0">
         {tab === 'params' && (
           <KeyValueEditor
             items={request.params}
@@ -83,16 +84,17 @@ export function RequestPanel({ request, onChange }: RequestPanelProps) {
         )}
 
         {tab === 'body' && (
-          <div className="flex flex-col gap-2 h-full">
+          <div className="flex flex-col gap-2 flex-1 min-h-0">
+            {/* Body type selector */}
             <div className="flex gap-1 flex-shrink-0">
               {BODY_TYPES.map((bt) => (
                 <button
                   key={bt.value}
                   className={[
-                    'bg-transparent border rounded text-xs cursor-pointer px-2.5 py-1 transition-all',
+                    'border rounded text-xs cursor-pointer px-2.5 py-1 transition-all font-medium',
                     request.bodyType === bt.value
-                      ? 'bg-accent border-accent text-bg font-semibold'
-                      : 'border-border text-text-muted hover:bg-bg-hover hover:text-text',
+                      ? 'bg-accent border-accent text-[#1e1e2e] font-semibold'
+                      : 'bg-transparent border-border text-text-muted hover:bg-bg-hover hover:text-text',
                   ].join(' ')}
                   onClick={() => onChange({ ...request, bodyType: bt.value })}
                 >
@@ -100,15 +102,17 @@ export function RequestPanel({ request, onChange }: RequestPanelProps) {
                 </button>
               ))}
             </div>
+
+            {/* Body editor */}
             {request.bodyType !== 'none' ? (
-              <textarea
-                className="flex-1 bg-bg-surface border border-border rounded-md text-text p-3 text-xs font-mono resize-none outline-none min-h-[200px] leading-relaxed focus:border-accent placeholder:text-text-faint"
+              <CodeEditor
                 value={request.body}
-                onChange={(e) => onChange({ ...request, body: e.target.value })}
+                onChange={(body) => onChange({ ...request, body })}
+                language={request.bodyType === 'json' ? 'json' : 'text'}
                 placeholder={
                   request.bodyType === 'json' ? '{\n  "key": "value"\n}' : 'Request body…'
                 }
-                spellCheck={false}
+                minHeight="200px"
               />
             ) : (
               <div className="p-5 text-text-faint text-xs text-center">

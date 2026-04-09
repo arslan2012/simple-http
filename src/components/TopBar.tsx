@@ -111,18 +111,25 @@ export function TopBar({ request, onChange, onSend, onSave, isLoading, isSaved }
         placeholder="Request name…"
       />
       <div className="flex gap-1.5 items-center">
-        <select
-          className="bg-bg-alt border border-border rounded-md text-xs font-bold outline-none cursor-pointer flex-shrink-0 px-2 py-1.5 focus:border-accent"
-          value={request.method}
-          onChange={(e) => onChange({ ...request, method: e.target.value as HttpMethod })}
-          style={{ color: METHOD_COLORS[request.method] }}
-        >
-          {HTTP_METHODS.map((m) => (
-            <option key={m} value={m} style={{ color: METHOD_COLORS[m], background: 'var(--color-bg-alt)' }}>
-              {m}
-            </option>
-          ))}
-        </select>
+        {/* Method select — appearance-none strips OS chrome; chevron drawn via pseudo-element wrapper */}
+        <div className="relative flex-shrink-0">
+          <select
+            className="appearance-none bg-bg-alt border border-border rounded-md text-xs font-bold outline-none cursor-pointer pl-2 pr-6 py-1.5 focus:border-accent"
+            value={request.method}
+            onChange={(e) => onChange({ ...request, method: e.target.value as HttpMethod })}
+            style={{ color: METHOD_COLORS[request.method] }}
+          >
+            {HTTP_METHODS.map((m) => (
+              <option key={m} value={m} style={{ color: METHOD_COLORS[m], background: 'var(--color-bg-alt)' }}>
+                {m}
+              </option>
+            ))}
+          </select>
+          {/* Custom chevron */}
+          <span className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-text-muted text-[9px]">
+            ▼
+          </span>
+        </div>
 
         <input
           type="text"
