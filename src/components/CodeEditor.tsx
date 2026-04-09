@@ -35,7 +35,7 @@ function jsonError(raw: string): string | null {
 const baseTheme = EditorView.theme({
   '&': {
     fontSize: '12px',
-    fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+    fontFamily: 'var(--font-mono)',
     flex: '1',
     minHeight: '0',
     height: '100%',
