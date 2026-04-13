@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/core';
+import { HotkeysProvider, useHotkeys } from '@tanstack/react-hotkeys';
 import type { HttpRequest, HttpResponse, SavedData, RequestGroup } from './types';
 import { Sidebar } from './components/Sidebar';
 import { TopBar } from './components/TopBar';
@@ -21,7 +22,7 @@ function newRequest(groupId?: string): HttpRequest {
   };
 }
 
-function App() {
+function AppInner() {
   const [savedData, setSavedData] = useState<SavedData>({ groups: [], requests: [] });
   const [current, setCurrent] = useState<HttpRequest>(newRequest());
   const [response, setResponse] = useState<HttpResponse | null>(null);
@@ -33,6 +34,7 @@ function App() {
   }, []);
 
   const handleSend = useCallback(async () => {
+    if (!current.url || isLoading) return;
     setIsLoading(true);
     setError(null);
     setResponse(null);
@@ -44,7 +46,7 @@ function App() {
     } finally {
       setIsLoading(false);
     }
-  }, [current]);
+  }, [current, isLoading]);
 
   const handleSave = useCallback(async () => {
     try {
@@ -124,8 +126,18 @@ function App() {
 
   const isSaved = savedData.requests.some((r) => r.id === current.id);
 
+  // Global hotkeys
+  useHotkeys(
+    [
+      { hotkey: 'Mod+Enter', callback: handleSend },
+      { hotkey: 'Mod+S', callback: handleSave },
+      { hotkey: 'Mod+N', callback: () => handleNewRequest() },
+    ],
+    { preventDefault: true },
+  );
+
   return (
-    <div className="app">
+    <div className="flex h-screen overflow-hidden bg-bg text-text">
       <Sidebar
         savedData={savedData}
         activeRequestId={current.id}
@@ -136,7 +148,7 @@ function App() {
         onToggleGroup={handleToggleGroup}
         onNewRequest={handleNewRequest}
       />
-      <div className="main">
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         <TopBar
           request={current}
           onChange={setCurrent}
@@ -145,9 +157,9 @@ function App() {
           isLoading={isLoading}
           isSaved={isSaved}
         />
-        <div className="panels">
+        <div className="flex-1 flex overflow-hidden min-h-0">
           <RequestPanel request={current} onChange={setCurrent} />
-          <div className="panel-divider" />
+          <div className="w-px bg-border flex-shrink-0" />
           <ResponsePanel response={response} error={error} isLoading={isLoading} />
         </div>
       </div>
@@ -155,5 +167,12 @@ function App() {
   );
 }
 
-export default App;
+function App() {
+  return (
+    <HotkeysProvider>
+      <AppInner />
+    </HotkeysProvider>
+  );
+}
 
+export default App;

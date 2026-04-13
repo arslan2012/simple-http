@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { HttpRequest, RequestGroup, SavedData } from '../types';
+import { ContextMenu, type ContextMenuItem } from './ContextMenu';
 
 interface SidebarProps {
   savedData: SavedData;
@@ -46,51 +47,62 @@ export function Sidebar({
   };
 
   return (
-    <aside className="sidebar">
-      <div className="sidebar-header">
-        <span className="sidebar-title">Collections</span>
-        <div className="sidebar-header-actions">
+    <aside className="w-60 flex-shrink-0 bg-bg-alt border-r border-border flex flex-col overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-3 py-2.5 border-b border-border flex-shrink-0">
+        <span className="text-[11px] font-semibold tracking-widest uppercase text-text-muted">
+          Collections
+        </span>
+        <div className="flex gap-1">
           <button
-            className="sidebar-icon-btn"
+            className="bg-transparent border-none text-text-muted cursor-pointer px-1.5 py-0.5 rounded text-sm leading-none transition-colors hover:bg-bg-hover hover:text-text"
             onClick={() => setShowNewGroup((v) => !v)}
-            title="New Group"
+            title="New Group (⌘G)"
           >
             ⊞
           </button>
           <button
-            className="sidebar-icon-btn"
+            className="bg-transparent border-none text-text-muted cursor-pointer px-1.5 py-0.5 rounded text-sm leading-none transition-colors hover:bg-bg-hover hover:text-text"
             onClick={() => onNewRequest()}
-            title="New Request"
+            title="New Request (⌘N)"
           >
             +
           </button>
         </div>
       </div>
 
+      {/* New group input */}
       {showNewGroup && (
-        <div className="new-group-form">
+        <div className="flex gap-1 p-2 border-b border-border flex-shrink-0">
           <input
             type="text"
-            className="new-group-input"
+            className="flex-1 bg-bg-surface border border-border rounded text-text px-2 py-1 text-xs outline-none focus:border-accent"
             value={newGroupName}
             onChange={(e) => setNewGroupName(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') handleCreateGroup();
               if (e.key === 'Escape') setShowNewGroup(false);
             }}
-            placeholder="Group name..."
+            placeholder="Group name…"
             autoFocus
           />
-          <button className="sidebar-icon-btn confirm" onClick={handleCreateGroup}>
+          <button
+            className="bg-transparent border-none text-text-muted cursor-pointer px-1.5 py-0.5 rounded text-sm leading-none transition-colors hover:bg-green/10 hover:text-green"
+            onClick={handleCreateGroup}
+          >
             ✓
           </button>
-          <button className="sidebar-icon-btn cancel" onClick={() => setShowNewGroup(false)}>
+          <button
+            className="bg-transparent border-none text-text-muted cursor-pointer px-1.5 py-0.5 rounded text-sm leading-none transition-colors hover:bg-red/10 hover:text-red"
+            onClick={() => setShowNewGroup(false)}
+          >
             ✕
           </button>
         </div>
       )}
 
-      <div className="sidebar-list">
+      {/* List */}
+      <div className="flex-1 overflow-y-auto py-1">
         {savedData.groups.map((group) => (
           <GroupItem
             key={group.id}
@@ -116,10 +128,10 @@ export function Sidebar({
         ))}
 
         {savedData.groups.length === 0 && ungroupedRequests.length === 0 && (
-          <div className="sidebar-empty">
-            <div className="sidebar-empty-icon">📭</div>
+          <div className="px-4 py-8 text-center text-text-muted text-xs">
+            <div className="text-3xl mb-2">📭</div>
             <p>No saved requests</p>
-            <p className="sidebar-empty-hint">Click + to create one</p>
+            <p className="text-text-faint mt-1 text-[11px]">Click + to create one</p>
           </div>
         )}
       </div>
@@ -149,22 +161,44 @@ function GroupItem({
   onNewRequest,
 }: GroupItemProps) {
   const [hovered, setHovered] = useState(false);
+  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null);
+
+  const ctxItems: ContextMenuItem[] = [
+    { id: 'add', label: 'Add Request', onAction: () => onNewRequest(group.id) },
+    { id: 'delete', label: 'Delete Group', onAction: () => onDeleteGroup(group.id), danger: true },
+  ];
 
   return (
-    <div className="group-item">
+    <div
+      className="select-none"
+      onContextMenu={(e) => {
+        e.preventDefault();
+        setCtxMenu({ x: e.clientX, y: e.clientY });
+      }}
+    >
       <div
-        className="group-header"
+        className="flex items-center pr-1"
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
       >
-        <button className="group-toggle-btn" onClick={() => onToggleGroup(group.id)}>
-          <span className="group-chevron">{group.collapsed ? '▶' : '▼'}</span>
-          <span className="group-name">{group.name}</span>
-          <span className="group-count">{requests.length}</span>
+        <button
+          className="flex-1 flex items-center gap-1.5 px-2 py-1.5 bg-transparent border-none text-text cursor-pointer text-xs font-medium text-left rounded min-w-0 hover:bg-bg-hover"
+          onClick={() => onToggleGroup(group.id)}
+        >
+          <span className="text-[9px] text-text-muted flex-shrink-0">
+            {group.collapsed ? '▶' : '▼'}
+          </span>
+          <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{group.name}</span>
+          <span className="text-[10px] bg-bg-active text-text-muted px-1.5 py-px rounded-full flex-shrink-0">
+            {requests.length}
+          </span>
         </button>
-        <div className="group-actions" style={{ opacity: hovered ? 1 : 0 }}>
+        <div
+          className="flex gap-0.5 transition-opacity"
+          style={{ opacity: hovered ? 1 : 0 }}
+        >
           <button
-            className="sidebar-icon-btn xs"
+            className="bg-transparent border-none text-text-muted cursor-pointer px-1 py-0.5 rounded text-[11px] leading-none transition-colors hover:bg-bg-hover hover:text-text"
             onClick={(e) => {
               e.stopPropagation();
               onNewRequest(group.id);
@@ -174,7 +208,7 @@ function GroupItem({
             +
           </button>
           <button
-            className="sidebar-icon-btn xs danger"
+            className="bg-transparent border-none text-text-muted cursor-pointer px-1 py-0.5 rounded text-[11px] leading-none transition-colors hover:bg-red/10 hover:text-red"
             onClick={(e) => {
               e.stopPropagation();
               onDeleteGroup(group.id);
@@ -187,7 +221,7 @@ function GroupItem({
       </div>
 
       {!group.collapsed && (
-        <div className="group-children">
+        <div>
           {requests.map((req) => (
             <RequestItem
               key={req.id}
@@ -198,8 +232,19 @@ function GroupItem({
               indented
             />
           ))}
-          {requests.length === 0 && <div className="empty-group-hint">No requests</div>}
+          {requests.length === 0 && (
+            <div className="py-1 pl-6 text-[11px] text-text-faint">No requests</div>
+          )}
         </div>
+      )}
+
+      {ctxMenu && (
+        <ContextMenu
+          x={ctxMenu.x}
+          y={ctxMenu.y}
+          items={ctxItems}
+          onClose={() => setCtxMenu(null)}
+        />
       )}
     </div>
   );
@@ -215,31 +260,58 @@ interface RequestItemProps {
 
 function RequestItem({ request, isActive, onLoad, onDelete, indented }: RequestItemProps) {
   const [hovered, setHovered] = useState(false);
+  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null);
   const color = METHOD_COLORS[request.method] ?? '#abb2bf';
 
+  const ctxItems: ContextMenuItem[] = [
+    { id: 'open', label: 'Open', onAction: onLoad },
+    { id: 'delete', label: 'Delete', onAction: onDelete, danger: true },
+  ];
+
   return (
-    <div
-      className={`request-item${isActive ? ' active' : ''}${indented ? ' indented' : ''}`}
-      onClick={onLoad}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
-      <span className="request-method" style={{ color }}>
-        {request.method}
-      </span>
-      <span className="request-name">{request.name || request.url || 'Untitled'}</span>
-      {hovered && (
-        <button
-          className="sidebar-icon-btn xs danger"
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete();
-          }}
-          title="Delete"
-        >
-          ✕
-        </button>
+    <>
+      <div
+        className={[
+          'flex items-center gap-1.5 py-1.5 cursor-pointer rounded mx-1 min-w-0 select-none transition-colors',
+          indented ? 'pl-5 pr-2' : 'px-2',
+          isActive ? 'bg-bg-active' : 'hover:bg-bg-hover',
+        ].join(' ')}
+        onClick={onLoad}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          setCtxMenu({ x: e.clientX, y: e.clientY });
+        }}
+      >
+        <span className="text-[10px] font-bold flex-shrink-0 w-[46px] text-left" style={{ color }}>
+          {request.method}
+        </span>
+        <span className="flex-1 text-xs overflow-hidden text-ellipsis whitespace-nowrap text-text">
+          {request.name || request.url || 'Untitled'}
+        </span>
+        {hovered && (
+          <button
+            className="bg-transparent border-none text-text-faint cursor-pointer p-0.5 text-[11px] rounded leading-none transition-colors hover:bg-red/10 hover:text-red"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete();
+            }}
+            title="Delete"
+          >
+            ✕
+          </button>
+        )}
+      </div>
+
+      {ctxMenu && (
+        <ContextMenu
+          x={ctxMenu.x}
+          y={ctxMenu.y}
+          items={ctxItems}
+          onClose={() => setCtxMenu(null)}
+        />
       )}
-    </div>
+    </>
   );
 }

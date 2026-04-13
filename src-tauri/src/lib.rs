@@ -109,10 +109,22 @@ async fn send_request(request: HttpRequest) -> Result<HttpResponse, String> {
 
     // Body
     if request.body_type != "none" && !request.body.is_empty() {
+        let has_content_type = request
+            .headers
+            .iter()
+            .any(|h| h.enabled && h.key.eq_ignore_ascii_case("content-type"));
+
         if request.body_type == "json" {
-            req_builder = req_builder
-                .header("Content-Type", "application/json")
-                .body(request.body.clone());
+            if !has_content_type {
+                req_builder = req_builder.header("Content-Type", "application/json");
+            }
+            req_builder = req_builder.body(request.body.clone());
+        } else if request.body_type == "form" {
+            if !has_content_type {
+                req_builder =
+                    req_builder.header("Content-Type", "application/x-www-form-urlencoded");
+            }
+            req_builder = req_builder.body(request.body.clone());
         } else {
             req_builder = req_builder.body(request.body.clone());
         }
