@@ -1,6 +1,6 @@
 <div align="center">
 
-# Simple HTTP
+# <img src="src-tauri/icons/icon.png" width="32"> Simple HTTP
 
 A fast, lightweight, native HTTP client — no Electron, no bloat.
 
@@ -98,4 +98,4 @@ Contributions are welcome! Feel free to open an issue or submit a pull request.
 
 ## License
 
-Distributed under the MIT License. See `LICENSE` for more information.
+Distributed under the MIT License. See [`LICENSE.md`](./LICENSE.md) for more information.
