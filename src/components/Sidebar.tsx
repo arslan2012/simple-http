@@ -1,17 +1,7 @@
 import { useState } from 'react';
-import type { HttpRequest, RequestGroup, SavedData } from '../types';
+import type { HttpRequest, RequestGroup } from '../types';
 import { ContextMenu, type ContextMenuItem } from './ContextMenu';
-
-interface SidebarProps {
-  savedData: SavedData;
-  activeRequestId: string | null;
-  onLoadRequest: (request: HttpRequest) => void;
-  onDeleteRequest: (id: string) => void;
-  onCreateGroup: (name: string) => void;
-  onDeleteGroup: (id: string) => void;
-  onToggleGroup: (id: string) => void;
-  onNewRequest: (groupId?: string) => void;
-}
+import { useSidebarContext } from './SidebarContext';
 
 const METHOD_COLORS: Record<string, string> = {
   GET: '#89b4fa',
@@ -23,16 +13,12 @@ const METHOD_COLORS: Record<string, string> = {
   OPTIONS: '#89dceb',
 };
 
-export function Sidebar({
-  savedData,
-  activeRequestId,
-  onLoadRequest,
-  onDeleteRequest,
-  onCreateGroup,
-  onDeleteGroup,
-  onToggleGroup,
-  onNewRequest,
-}: SidebarProps) {
+export function Sidebar() {
+  const {
+    savedData,
+    onCreateGroup,
+    onNewRequest,
+  } = useSidebarContext();
   const [newGroupName, setNewGroupName] = useState('');
   const [showNewGroup, setShowNewGroup] = useState(false);
 
@@ -108,12 +94,6 @@ export function Sidebar({
             key={group.id}
             group={group}
             requests={savedData.requests.filter((r) => r.groupId === group.id)}
-            activeRequestId={activeRequestId}
-            onLoadRequest={onLoadRequest}
-            onDeleteRequest={onDeleteRequest}
-            onToggleGroup={onToggleGroup}
-            onDeleteGroup={onDeleteGroup}
-            onNewRequest={onNewRequest}
           />
         ))}
 
@@ -121,9 +101,6 @@ export function Sidebar({
           <RequestItem
             key={req.id}
             request={req}
-            isActive={req.id === activeRequestId}
-            onLoad={() => onLoadRequest(req)}
-            onDelete={() => onDeleteRequest(req.id)}
           />
         ))}
 
@@ -142,24 +119,10 @@ export function Sidebar({
 interface GroupItemProps {
   group: RequestGroup;
   requests: HttpRequest[];
-  activeRequestId: string | null;
-  onLoadRequest: (r: HttpRequest) => void;
-  onDeleteRequest: (id: string) => void;
-  onToggleGroup: (id: string) => void;
-  onDeleteGroup: (id: string) => void;
-  onNewRequest: (groupId?: string) => void;
 }
 
-function GroupItem({
-  group,
-  requests,
-  activeRequestId,
-  onLoadRequest,
-  onDeleteRequest,
-  onToggleGroup,
-  onDeleteGroup,
-  onNewRequest,
-}: GroupItemProps) {
+function GroupItem({ group, requests }: GroupItemProps) {
+  const { onToggleGroup, onDeleteGroup, onNewRequest } = useSidebarContext();
   const [hovered, setHovered] = useState(false);
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null);
 
@@ -226,9 +189,6 @@ function GroupItem({
             <RequestItem
               key={req.id}
               request={req}
-              isActive={req.id === activeRequestId}
-              onLoad={() => onLoadRequest(req)}
-              onDelete={() => onDeleteRequest(req.id)}
               indented
             />
           ))}
@@ -252,19 +212,23 @@ function GroupItem({
 
 interface RequestItemProps {
   request: HttpRequest;
-  isActive: boolean;
-  onLoad: () => void;
-  onDelete: () => void;
   indented?: boolean;
 }
 
-function RequestItem({ request, isActive, onLoad, onDelete, indented }: RequestItemProps) {
+function RequestItem({ request, indented }: RequestItemProps) {
+  const { activeRequestId, onLoadRequest, onDeleteRequest, onDuplicateRequest } = useSidebarContext();
+  const isActive = request.id === activeRequestId;
   const [hovered, setHovered] = useState(false);
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null);
   const color = METHOD_COLORS[request.method] ?? '#abb2bf';
 
+  const onLoad = () => onLoadRequest(request);
+  const onDelete = () => onDeleteRequest(request.id);
+  const onDuplicate = () => onDuplicateRequest(request);
+
   const ctxItems: ContextMenuItem[] = [
     { id: 'open', label: 'Open', onAction: onLoad },
+    { id: 'duplicate', label: 'Duplicate', onAction: onDuplicate },
     { id: 'delete', label: 'Delete', onAction: onDelete, danger: true },
   ];
 

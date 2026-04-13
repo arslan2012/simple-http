@@ -17,7 +17,7 @@ interface TopBarProps {
   request: HttpRequest;
   onChange: (req: HttpRequest) => void;
   onSend: () => void;
-  onSave: () => void;
+  onSave: () => Promise<void>;
   isLoading: boolean;
   isSaved: boolean;
 }
@@ -72,6 +72,7 @@ function parseDisplayUrl(
 export function TopBar({ request, onChange, onSend, onSave, isLoading, isSaved }: TopBarProps) {
   const [urlValue, setUrlValue] = useState(() => buildDisplayUrl(request.url, request.params));
   const [isFocused, setIsFocused] = useState(false);
+  const [showSavedFlash, setShowSavedFlash] = useState(false);
   const prevIdRef = useRef(request.id);
 
   // Sync the address bar when the active request changes or when external params update
@@ -167,14 +168,22 @@ export function TopBar({ request, onChange, onSend, onSave, isLoading, isSaved }
         <button
           className={[
             'bg-bg-alt border rounded-md px-4 py-1.5 text-[13px] cursor-pointer flex-shrink-0 transition-all',
-            isSaved
-              ? 'border-green text-green hover:bg-green/10'
-              : 'border-border text-text-muted hover:bg-bg-hover hover:text-text',
+            showSavedFlash
+              ? 'border-green text-green bg-green/10'
+              : isSaved
+                ? 'border-green text-green hover:bg-green/10'
+                : 'border-border text-text-muted hover:bg-bg-hover hover:text-text',
           ].join(' ')}
-          onClick={onSave}
+          onClick={async () => {
+            await onSave();
+            if (isSaved) {
+              setShowSavedFlash(true);
+              setTimeout(() => setShowSavedFlash(false), 1200);
+            }
+          }}
           title="Save (⌘S)"
         >
-          {isSaved ? 'Update' : 'Save'}
+          {showSavedFlash ? 'Updated ✓' : isSaved ? 'Update' : 'Save'}
         </button>
       </div>
     </div>

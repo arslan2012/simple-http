@@ -3,6 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { HotkeysProvider, useHotkeys } from '@tanstack/react-hotkeys';
 import type { HttpRequest, HttpResponse, SavedData, RequestGroup } from './types';
 import { Sidebar } from './components/Sidebar';
+import { SidebarProvider } from './components/SidebarContext';
 import { TopBar } from './components/TopBar';
 import { RequestPanel } from './components/RequestPanel';
 import { ResponsePanel } from './components/ResponsePanel';
@@ -124,6 +125,26 @@ function AppInner() {
     setError(null);
   }, []);
 
+  const handleDuplicateRequest = useCallback(
+    async (request: HttpRequest) => {
+      const duplicate: HttpRequest = {
+        ...request,
+        id: crypto.randomUUID(),
+        name: request.name ? `${request.name} (copy)` : '(copy)',
+      };
+      try {
+        await invoke('save_request', { request: duplicate });
+        setSavedData((prev) => ({ ...prev, requests: [...prev.requests, duplicate] }));
+        setCurrent(duplicate);
+        setResponse(null);
+        setError(null);
+      } catch (e) {
+        console.error('Duplicate failed:', e);
+      }
+    },
+    [],
+  );
+
   const isSaved = savedData.requests.some((r) => r.id === current.id);
 
   // Global hotkeys
@@ -138,16 +159,21 @@ function AppInner() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-bg text-text">
-      <Sidebar
-        savedData={savedData}
-        activeRequestId={current.id}
-        onLoadRequest={handleLoadRequest}
-        onDeleteRequest={handleDeleteRequest}
-        onCreateGroup={handleCreateGroup}
-        onDeleteGroup={handleDeleteGroup}
-        onToggleGroup={handleToggleGroup}
-        onNewRequest={handleNewRequest}
-      />
+      <SidebarProvider
+        value={{
+          savedData,
+          activeRequestId: current.id,
+          onLoadRequest: handleLoadRequest,
+          onDeleteRequest: handleDeleteRequest,
+          onDuplicateRequest: handleDuplicateRequest,
+          onCreateGroup: handleCreateGroup,
+          onDeleteGroup: handleDeleteGroup,
+          onToggleGroup: handleToggleGroup,
+          onNewRequest: handleNewRequest,
+        }}
+      >
+        <Sidebar />
+      </SidebarProvider>
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         <TopBar
           request={current}
