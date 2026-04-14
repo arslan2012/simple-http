@@ -16,6 +16,7 @@ A fast, lightweight, native HTTP client — no Electron, no bloat.
 ## About
 
 Popular HTTP clients like Postman and Insomnia ship with too many features you'll never use — and they all run on Electron. Simple HTTP is a minimalistic alternative built with **Tauri 2** and **Rust**, so it stays fast and lightweight while covering the essentials.
+![Screenshot](./Screenshot.png)
 
 ## Features
 
